@@ -1509,6 +1509,7 @@ EOD;
 	{
 		$htmlOptions['href'] = self::popOption('url', $htmlOptions, '#');
 		$htmlOptions['href'] = CHtml::normalizeUrl($htmlOptions['href']);
+		CHtml::clientChange('click', $htmlOptions);
 		return self::btn('a', $label, $htmlOptions);
 	}
 
