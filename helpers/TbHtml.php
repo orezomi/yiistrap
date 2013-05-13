@@ -2824,7 +2824,7 @@ EOD;
 	{
 		if (is_array($items) && !empty($items))
 		{
-			$id = self::getOption('id', $htmlOptions, self::getNextId());
+			$id = self::getOption('id', $htmlOptions, CHtml::ID_PREFIX . CHtml::$count++);
 			$htmlOptions = self::defaultOption('id', $id, $htmlOptions);
 			$selector = '#' . $id;
 			$htmlOptions = self::addClassName('carousel', $htmlOptions);
@@ -2836,28 +2836,39 @@ EOD;
 			$pause = self::popOption('data-interval', $htmlOptions);
 			if ($pause) // todo: add attribute validation if seen necessary.
 				$htmlOptions = self::defaultOption('data-pause', $pause, $htmlOptions);
+			$indicatorOptions = self::popOption('indicatorOptions', $htmlOptions, array());
 			$innerOptions = self::popOption('innerOptions', $htmlOptions, array());
 			$innerOptions = self::addClassName('carousel-inner', $innerOptions);
 			$prevOptions = self::popOption('prevOptions', $htmlOptions, array());
 			$prevLabel = self::popOption('label', $prevOptions, '&lsaquo;');
 			$nextOptions = self::popOption('nextOptions', $htmlOptions, array());
 			$nextLabel = self::popOption('label', $nextOptions, '&rsaquo;');
+			$hidePrevAndNext = self::popOption('hidePrevAndNext', $htmlOptions, false);
 			ob_start();
-			echo CHtml::openTag('div', $htmlOptions);
-			echo CHtml::openTag('div', $innerOptions);
+			echo self::openTag('div', $htmlOptions);
+			echo self::openTag('div', $innerOptions);
 			foreach ($items as $i => $itemOptions)
 			{
 				$itemOptions = self::addClassName('item', $itemOptions);
 				if ($i === 0) // first item should be active
 					$itemOptions = self::addClassName('active', $itemOptions);
 				$content = self::popOption('content', $itemOptions, '');
+				$image = self::popOption('image', $itemOptions, '');
+				$imageAlt = self::popOption('alt', $itemOptions, '');
+				$imageOptions = self::popOption('imageOptions', $itemOptions, array());
+				if (!empty($image))
+					$content = CHtml::image($image, $imageAlt, $imageOptions);
 				$label = self::popOption('label', $itemOptions);
 				$caption = self::popOption('caption', $itemOptions);
 				echo self::carouselItem($content, $label, $caption, $itemOptions);
 			}
 			echo '</div>';
-			echo self::carouselPrevLink($prevLabel, $selector, $prevOptions);
-			echo self::carouselNextLink($nextLabel, $selector, $nextOptions);
+			if (!$hidePrevAndNext)
+			{
+				echo self::carouselPrevLink($prevLabel, $selector, $prevOptions);
+				echo self::carouselNextLink($nextLabel, $selector, $nextOptions);
+			}
+			echo self::carouselIndicators($selector, count($items), $indicatorOptions);
 			echo '</div>';
 			return ob_get_clean();
 		}
@@ -2879,15 +2890,15 @@ EOD;
 		$labelOptions = self::popOption('labelOptions', $htmlOptions, array());
 		$captionOptions = self::popOption('captionOptions', $htmlOptions, array());
 		ob_start();
-		echo CHtml::openTag('div', $htmlOptions);
+		echo self::openTag('div', $htmlOptions);
 		echo $content;
 		if (isset($label) || isset($caption))
 		{
-			echo CHtml::openTag('div', $overlayOptions);
+			echo self::openTag('div', $overlayOptions);
 			if ($label)
-				echo CHtml::tag('h4', $labelOptions, $label);
+				echo self::tag('h4', $labelOptions, $label);
 			if ($caption)
-				echo CHtml::tag('p', $captionOptions, $caption);
+				echo self::tag('p', $captionOptions, $caption);
 			echo '</div>';
 		}
 		echo '</div>';
@@ -2905,7 +2916,7 @@ EOD;
 	{
 		$htmlOptions['data-slide'] = 'prev';
 		$htmlOptions = self::addClassName('carousel-control left', $htmlOptions);
-		return CHtml::link($label, $url, $htmlOptions);
+		return self::link($label, $url, $htmlOptions);
 	}
 
 	/**
@@ -2919,7 +2930,30 @@ EOD;
 	{
 		$htmlOptions['data-slide'] = 'next';
 		$htmlOptions = self::addClassName('carousel-control right', $htmlOptions);
-		return CHtml::link($label, $url, $htmlOptions);
+		return self::link($label, $url, $htmlOptions);
+	}
+
+	/**
+	 * Generates an indicator for the carousel.
+	 * @param string $target the CSS selector for the target element.
+	 * @param integer $numSlides the number of slides.
+	 * @param array $htmlOptions additional HTML attributes.
+	 * @return string the generated indicators.
+	 */
+	public static function carouselIndicators($target, $numSlides, $htmlOptions = array())
+	{
+		$htmlOptions = self::addClassName('carousel-indicators', $htmlOptions);
+		ob_start();
+		echo self::openTag('ol', $htmlOptions);
+		for ($i = 0; $i < $numSlides; $i++)
+		{
+			$itemOptions = array('data-target' => $target, 'data-slide-to' => $i);
+			if ($i === 0)
+				$itemOptions['class'] = 'active';
+			echo self::tag('li', $itemOptions);
+		}
+		echo '</ol>';
+		return ob_get_clean();
 	}
 
 	// UTILITIES
